@@ -3,300 +3,242 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Meal Check-off</title>
+<title>Paryushan Meal Check-off</title>
 <style>
-  :root {
-    --bg: #f6f5f1;
-    --surface: #ffffff;
-    --ink: #16302b;
-    --muted: #6b7770;
-    --line: #e2e4de;
-    --pending-border: #d3d7cf;
-    --done: #157f5b;
-    --done-bg: #e6f3ec;
-    --accent: #b9702f;
-    --accent-bg: #f4e7d8;
-    --danger: #a2402f;
-    --radius: 14px;
-    --tap: 48px;
+  :root{
+    --bg:#f6f5f1; --surface:#fff; --ink:#16302b; --muted:#6b7770; --line:#e2e4de;
+    --pending:#d3d7cf; --done:#157f5b; --done-bg:#e6f3ec; --accent:#b9702f; --accent-bg:#f4e7d8;
+    --danger:#a2402f; --radius:14px; --tap:48px;
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    background: var(--bg);
-    color: var(--ink);
-    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .wrap { max-width: 640px; margin: 0 auto; }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;padding-bottom:env(safe-area-inset-bottom)}
+  .wrap{max-width:680px;margin:0 auto}
 
-  header {
-    position: sticky; top: 0; z-index: 20;
-    background: var(--ink); color: #fff;
-    padding: 14px 16px calc(14px + 8px);
-    padding-top: max(14px, env(safe-area-inset-top));
-  }
-  .titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: .2px; }
-  .sync { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #cdd8d3; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #7fd0a8; box-shadow: 0 0 0 0 rgba(127,208,168,.7); }
-  .dot.live { animation: pulse 2s infinite; }
-  .dot.stale { background: #e0b357; animation: none; }
-  .dot.error { background: #e07a5f; animation: none; }
-  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(127,208,168,.6)} 70%{box-shadow:0 0 0 7px rgba(127,208,168,0)} 100%{box-shadow:0 0 0 0 rgba(127,208,168,0)} }
+  header{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;
+    padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top))}
+  .titlebar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  h1{font-size:16px;margin:0;font-weight:650;letter-spacing:.2px}
+  .sync{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#cdd8d3}
+  .dot{width:9px;height:9px;border-radius:50%;background:#7fd0a8}
+  .dot.live{animation:pulse 2s infinite}.dot.stale{background:#e0b357}.dot.error{background:#e07a5f}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(127,208,168,.6)}70%{box-shadow:0 0 0 7px rgba(127,208,168,0)}100%{box-shadow:0 0 0 0 rgba(127,208,168,0)}}
 
-  .bars { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
-  .bar-label { display: flex; justify-content: space-between; font-size: 12.5px; color: #cdd8d3; margin-bottom: 5px; }
-  .bar-label b { color: #fff; font-weight: 600; }
-  .track { height: 8px; border-radius: 99px; background: rgba(255,255,255,.16); overflow: hidden; }
-  .fill { height: 100%; width: 0%; border-radius: 99px; background: #7fd0a8; transition: width .35s ease; }
-  .fill.dinner { background: #e6b96b; }
+  .days{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px;padding-bottom:2px}
+  .day{flex:0 0 auto;min-width:46px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.22);
+    background:transparent;color:#cdd8d3;font-weight:600;font-size:14px;cursor:pointer}
+  .day[aria-pressed="true"]{background:#fff;color:var(--ink);border-color:#fff}
+  .meals{display:flex;gap:8px;margin-top:10px}
+  .mealbtn{flex:1;height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.22);
+    background:transparent;color:#eaf0ed;font-weight:600;font-size:14.5px;cursor:pointer}
+  .mealbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .mealbtn:disabled{opacity:.35;cursor:not-allowed}
 
-  .controls { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 12px 16px 8px; }
-  .search {
-    width: 100%; height: var(--tap); border: 1px solid var(--line); border-radius: var(--radius);
-    background: var(--surface); padding: 0 44px 0 14px; font-size: 16px; color: var(--ink);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%236b7770' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.3-4.3'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 14px center;
-  }
-  .search:focus { outline: 3px solid var(--accent-bg); border-color: var(--accent); }
-  .filters { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .chip {
-    flex: 0 0 auto; height: 38px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--pending-border);
-    background: var(--surface); color: var(--muted); font-size: 14px; font-weight: 550; cursor: pointer;
-  }
-  .chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
-  .chip:focus-visible { outline: 3px solid var(--accent-bg); }
+  .prog{display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:#cdd8d3}
+  .prog b{color:#fff;font-weight:650}
+  .track{height:7px;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden;margin-top:10px}
+  .fill{height:100%;width:0;border-radius:99px;background:#7fd0a8;transition:width .35s ease}
 
-  main { padding: 4px 12px 40px; }
-  .row {
-    display: flex; align-items: center; gap: 12px; background: var(--surface);
-    border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; margin: 8px 4px;
-  }
-  .who { min-width: 0; flex: 1; }
-  .name { font-family: Georgia, "Times New Roman", serif; font-size: 17.5px; line-height: 1.25; }
-  .email { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-  .meals { display: flex; gap: 8px; flex: 0 0 auto; }
-  .meal {
-    min-width: 64px; min-height: var(--tap); border-radius: 12px; border: 1.5px solid var(--pending-border);
-    background: var(--surface); color: var(--muted); cursor: pointer; padding: 6px 8px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    font-weight: 600; transition: background .12s, border-color .12s, color .12s;
-  }
-  .meal small { font-size: 10.5px; font-weight: 600; letter-spacing: .3px; opacity: .8; }
-  .meal .qty { font-size: 17px; line-height: 1; }
-  .meal[aria-pressed="true"] { background: var(--done-bg); border-color: var(--done); color: var(--done); }
-  .meal[aria-pressed="true"] .check { display: inline; }
-  .meal .check { display: none; font-size: 12px; }
-  .meal:focus-visible { outline: 3px solid var(--accent-bg); }
-  .meal.busy { opacity: .55; }
+  .banner{margin:10px 16px;padding:12px 14px;border-radius:12px;font-size:14px;
+    background:var(--accent-bg);color:#6b3f18;border:1px solid #e6cba6}
 
-  .empty { text-align: center; color: var(--muted); padding: 48px 20px; }
-  .empty b { color: var(--ink); display: block; margin-bottom: 6px; font-size: 16px; }
+  .controls{position:sticky;top:0;z-index:10;background:var(--bg);padding:12px 16px 8px}
+  .search{width:100%;height:var(--tap);border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--surface);padding:0 14px;font-size:16px;color:var(--ink)}
+  .search:focus{outline:3px solid var(--accent-bg);border-color:var(--accent)}
+  .filters{display:flex;gap:8px;margin-top:10px}
+  .chip{height:36px;padding:0 14px;border-radius:99px;border:1px solid var(--pending);
+    background:var(--surface);color:var(--muted);font-size:14px;font-weight:550;cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
 
-  .banner {
-    margin: 10px 16px; padding: 12px 14px; border-radius: 12px; font-size: 14px;
-    background: var(--accent-bg); color: #6b3f18; border: 1px solid #e6cba6;
-  }
+  main{padding:2px 12px 40px}
+  .row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:12px;margin:8px 4px;cursor:pointer;
+    transition:background .12s,border-color .12s}
+  .row[aria-pressed="true"]{background:var(--done-bg);border-color:var(--done)}
+  .row:focus-visible{outline:3px solid var(--accent-bg)}
+  .row.busy{opacity:.55}
+  .who{min-width:0;flex:1}
+  .name{font-family:Georgia,"Times New Roman",serif;font-size:17.5px;line-height:1.25}
+  .meta{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qty{flex:0 0 auto;min-width:52px;height:var(--tap);border-radius:12px;border:1.5px solid var(--pending);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
+  .qty .n{font-size:19px;line-height:1}
+  .qty small{font-size:9.5px;font-weight:600;letter-spacing:.3px;opacity:.8}
+  .row[aria-pressed="true"] .qty{border-color:var(--done);color:var(--done);background:#fff}
+  .tick{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:2px solid var(--pending);
+    display:flex;align-items:center;justify-content:center;color:transparent;font-size:15px;font-weight:800}
+  .row[aria-pressed="true"] .tick{background:var(--done);border-color:var(--done);color:#fff}
 
-  .footer { text-align: center; padding: 8px 16px 28px; }
-  .link { background: none; border: none; color: var(--muted); font-size: 13px; text-decoration: underline; cursor: pointer; }
-  .danger { color: var(--danger); }
-
-  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  .empty{text-align:center;color:var(--muted);padding:44px 20px}
+  .empty b{color:var(--ink);display:block;margin-bottom:6px;font-size:16px}
+  .footer{text-align:center;padding:8px 16px 28px}
+  .link{background:none;border:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer}
+  .danger{color:var(--danger)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="titlebar">
-      <h1>Meal Check-off</h1>
+      <h1>Paryushan Meal Check-off</h1>
       <div class="sync"><span id="dot" class="dot live"></span><span id="syncText">Live</span></div>
     </div>
-    <div class="bars">
-      <div>
-        <div class="bar-label"><span>Lunch</span><span><b id="lunchServed">0</b>/<span id="lunchTotal">0</span></span></div>
-        <div class="track"><div id="lunchFill" class="fill"></div></div>
-      </div>
-      <div>
-        <div class="bar-label"><span>Dinner</span><span><b id="dinnerServed">0</b>/<span id="dinnerTotal">0</span></span></div>
-        <div class="track"><div id="dinnerFill" class="fill dinner"></div></div>
-      </div>
+    <div id="days" class="days" role="group" aria-label="Day"></div>
+    <div id="mealRow" class="meals" role="group" aria-label="Meal"></div>
+    <div class="prog">
+      <span>People <b id="pServed">0</b>/<span id="pTotal">0</span></span>
+      <span>Plates <b id="plServed">0</b>/<span id="plTotal">0</span></span>
     </div>
+    <div class="track"><div id="fill" class="fill"></div></div>
   </header>
 
   <div id="banner"></div>
 
   <div class="controls">
     <input id="search" class="search" type="search" inputmode="search" autocomplete="off"
-           placeholder="Search name or email" aria-label="Search people" />
+           placeholder="Search name, mobile or email" aria-label="Search" />
     <div class="filters" role="group" aria-label="Filter">
       <button class="chip" data-filter="all" aria-pressed="true">All</button>
-      <button class="chip" data-filter="lunch" aria-pressed="false">Lunch pending</button>
-      <button class="chip" data-filter="dinner" aria-pressed="false">Dinner pending</button>
+      <button class="chip" data-filter="pending" aria-pressed="false">Not collected</button>
     </div>
   </div>
 
   <main id="list" aria-live="polite"></main>
 
   <div class="footer">
-    <button id="resetBtn" class="link danger">Reset all check-offs</button>
+    <button id="resetBtn" class="link danger">Reset this session's check-offs</button>
+    <div style="margin-top:10px"><a class="link" href="./admin.html">Roster admin</a></div>
   </div>
 </div>
 
 <script>
-const el = (id) => document.getElementById(id);
-let roster = [];
-let served = {};          // { "lunch:<id>": 1, "dinner:<id>": 1 }
-let filter = "all";
-let query = "";
-let lastGood = 0;
-const inflight = new Set(); // fields currently being written
+const el = (id)=>document.getElementById(id);
+let sessions=[], people=[], served={}, session=null;
+let filter="all", query="", lastGood=0, lastSig="";
+const inflight=new Set();
 
-function key(meal, id) { return meal + ":" + id; }
-function isDone(meal, id) { return !!served[key(meal, id)]; }
+const field=(s,id)=>s+":"+id;
+const isDone=(s,id)=>!!served[field(s,id)];
 
-async function load() {
-  try {
-    const r = await fetch("/api/state", { cache: "no-store" });
-    const data = await r.json();
-    roster = data.roster || [];
-    // Don't clobber optimistic writes that are still in flight.
-    const incoming = data.served || {};
-    for (const f of inflight) {
-      if (served[f]) incoming[f] = 1; else delete incoming[f];
-    }
-    served = incoming;
-    lastGood = Date.now();
-    setSync("live");
-    if (data.configured === false) showBanner(data.message);
-    else clearBanner();
-    render();
-  } catch (e) {
-    setSync(Date.now() - lastGood > 8000 ? "error" : "stale");
-  }
+async function load(){
+  try{
+    const r=await fetch("/api/state",{cache:"no-store"});
+    const d=await r.json();
+    sessions=d.sessions||[]; people=d.people||[];
+    if(!session && sessions.length) session=sessions[0].key;
+    const incoming=d.served||{};
+    for(const f of inflight){ if(served[f]) incoming[f]=1; else delete incoming[f]; }
+    served=incoming; lastGood=Date.now(); setSync("live");
+    if(d.configured===false) showBanner(d.message); else clearBanner();
+    buildSelector(); render();
+  }catch(e){ setSync(Date.now()-lastGood>8000?"error":"stale"); }
 }
 
-async function toggle(meal, id) {
-  const f = key(meal, id);
-  const next = !served[f];
-  if (next) served[f] = 1; else delete served[f];  // optimistic
-  inflight.add(f);
-  render();
-  try {
-    const r = await fetch("/api/toggle", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, meal, collected: next }),
-    });
-    if (!r.ok) throw new Error();
-  } catch (e) {
-    if (next) delete served[f]; else served[f] = 1;  // rollback
-    setSync("error");
-  } finally {
-    inflight.delete(f);
-    render();
-  }
+async function toggle(id){
+  const f=field(session,id); const next=!served[f];
+  if(next) served[f]=1; else delete served[f];
+  inflight.add(f); lastSig=""; render();
+  try{
+    const r=await fetch("/api/toggle",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({id,session,collected:next})});
+    if(!r.ok) throw new Error();
+  }catch(e){ if(next) delete served[f]; else served[f]=1; setSync("error"); }
+  finally{ inflight.delete(f); lastSig=""; render(); }
 }
 
-function totals() {
-  let lt = 0, ls = 0, dt = 0, ds = 0;
-  for (const p of roster) {
-    lt += p.lunch; dt += p.dinner;
-    if (isDone("lunch", p.id)) ls += p.lunch;
-    if (isDone("dinner", p.id)) ds += p.dinner;
-  }
-  return { lt, ls, dt, ds };
+function buildSelector(){
+  const days=[...new Set(sessions.map(s=>s.day))].sort((a,b)=>a-b);
+  const cur=sessions.find(s=>s.key===session)||sessions[0];
+  el("days").innerHTML=days.map(day=>
+    `<button class="day" data-day="${day}" aria-pressed="${cur&&cur.day===day}">Day ${day}</button>`).join("");
+  const meals=sessions.filter(s=>s.day===(cur?cur.day:0));
+  const has=m=>meals.some(s=>s.meal===m);
+  el("mealRow").innerHTML=["lunch","dinner"].map(m=>{
+    const s=meals.find(x=>x.meal===m);
+    const on=cur&&cur.meal===m;
+    return `<button class="mealbtn" data-meal="${m}" ${has(m)?"":"disabled"} aria-pressed="${!!on}"
+      data-key="${s?s.key:""}">${m[0].toUpperCase()+m.slice(1)}</button>`;
+  }).join("");
 }
 
-function visible() {
-  const q = query.trim().toLowerCase();
-  return roster.filter((p) => {
-    if (q && !(p.name.toLowerCase().includes(q) || (p.email || "").toLowerCase().includes(q))) return false;
-    if (filter === "lunch") return p.lunch > 0 && !isDone("lunch", p.id);
-    if (filter === "dinner") return p.dinner > 0 && !isDone("dinner", p.id);
-    return true;
-  });
+function rowsFor(){
+  const q=query.trim().toLowerCase();
+  let list=people.filter(p=>p.q&&p.q[session]>0);
+  if(q) list=list.filter(p=>p.name.toLowerCase().includes(q)||(p.email||"").toLowerCase().includes(q)||(p.mobile||"").includes(q));
+  if(filter==="pending") list=list.filter(p=>!isDone(session,p.id));
+  return list.sort((a,b)=>a.name.localeCompare(b.name));
 }
 
-function render() {
-  const { lt, ls, dt, ds } = totals();
-  el("lunchServed").textContent = ls; el("lunchTotal").textContent = lt;
-  el("dinnerServed").textContent = ds; el("dinnerTotal").textContent = dt;
-  el("lunchFill").style.width = (lt ? (ls / lt) * 100 : 0) + "%";
-  el("dinnerFill").style.width = (dt ? (ds / dt) * 100 : 0) + "%";
+function render(){
+  const cur=sessions.find(s=>s.key===session);
+  const all=people.filter(p=>p.q&&p.q[session]>0);
+  let pT=all.length,pS=0,plT=0,plS=0;
+  for(const p of all){ const q=p.q[session]; plT+=q; if(isDone(session,p.id)){pS++;plS+=q;} }
+  el("pServed").textContent=pS; el("pTotal").textContent=pT;
+  el("plServed").textContent=plS; el("plTotal").textContent=plT;
+  el("fill").style.width=(plT?plS/plT*100:0)+"%";
 
-  const rows = visible();
-  const list = el("list");
-  if (!rows.length) {
-    list.innerHTML = '<div class="empty"><b>Nothing here</b>' +
-      (roster.length ? "Try clearing the search or filter." : "Add people to data/roster.csv and redeploy.") + "</div>";
+  const rows=rowsFor();
+  const sig=session+"|"+filter+"|"+query+"|"+rows.length+"|"+rows.filter(p=>isDone(session,p.id)).length+"|"+[...inflight].join(",");
+  if(sig===lastSig) return; lastSig=sig;
+
+  const list=el("list");
+  if(!rows.length){
+    list.innerHTML='<div class="empty"><b>No one to show</b>'+
+      (all.length?"Try clearing the search or filter.":"No signups for "+(cur?cur.label:"this session")+".")+"</div>";
     return;
   }
-  list.innerHTML = rows.map(rowHtml).join("");
+  list.innerHTML=rows.map(rowHtml).join("");
 }
 
-function rowHtml(p) {
-  const meal = (name, label, qty) => {
-    if (!qty) return "";
-    const done = isDone(name, p.id);
-    const busy = inflight.has(key(name, p.id)) ? " busy" : "";
-    return `<button class="meal${busy}" aria-pressed="${done}" data-meal="${name}" data-id="${esc(p.id)}"
-      aria-label="${label} for ${esc(p.name)}, ${qty} ${qty > 1 ? "meals" : "meal"}${done ? ", collected" : ""}">
-      <small>${label} <span class="check">✓</span></small>
-      <span class="qty">${qty}</span></button>`;
-  };
-  return `<div class="row">
-    <div class="who">
-      <div class="name">${esc(p.name)}</div>
-      ${p.email ? `<div class="email">${esc(p.email)}</div>` : ""}
-    </div>
-    <div class="meals">${meal("lunch", "Lunch", p.lunch)}${meal("dinner", "Dinner", p.dinner)}</div>
+function rowHtml(p){
+  const done=isDone(session,p.id);
+  const busy=inflight.has(field(session,p.id))?" busy":"";
+  const q=p.q[session];
+  const meta=[p.mobile,shortDate(p.at)].filter(Boolean).join("  \u00b7  ");
+  return `<div class="row${busy}" role="button" tabindex="0" aria-pressed="${done}" data-id="${esc(p.id)}"
+      aria-label="${esc(p.name)}, ${q} ${q>1?"plates":"plate"}${done?", collected":""}">
+    <div class="tick">\u2713</div>
+    <div class="who"><div class="name">${esc(p.name)}</div>${meta?`<div class="meta">${esc(meta)}</div>`:""}</div>
+    <div class="qty"><span class="n">${q}</span><small>${q>1?"PLATES":"PLATE"}</small></div>
   </div>`;
 }
 
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
+function shortDate(s){ if(!s) return ""; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s); if(!m) return "";
+  const mo=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[2]-1];
+  return mo+" "+(+m[3]); }
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function setSync(st){el("dot").className="dot "+(st==="live"?"live":st);
+  el("syncText").textContent=st==="live"?"Live":st==="stale"?"Reconnecting\u2026":"Offline";}
+function showBanner(m){el("banner").innerHTML=`<div class="banner">${esc(m)}</div>`}
+function clearBanner(){el("banner").innerHTML=""}
 
-function setSync(state) {
-  const dot = el("dot"), t = el("syncText");
-  dot.className = "dot " + (state === "live" ? "live" : state);
-  t.textContent = state === "live" ? "Live" : state === "stale" ? "Reconnecting…" : "Offline";
-}
-function showBanner(msg) { el("banner").innerHTML = `<div class="banner">${esc(msg)}</div>`; }
-function clearBanner() { el("banner").innerHTML = ""; }
-
-// Events
-el("list").addEventListener("click", (e) => {
-  const b = e.target.closest(".meal");
-  if (b) toggle(b.dataset.meal, b.dataset.id);
-});
-el("search").addEventListener("input", (e) => { query = e.target.value; render(); });
-document.querySelectorAll(".chip").forEach((c) =>
-  c.addEventListener("click", () => {
-    filter = c.dataset.filter;
-    document.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x === c));
-    render();
-  })
-);
-el("resetBtn").addEventListener("click", async () => {
-  if (prompt('This clears every check-off for all volunteers. Type RESET to confirm.') !== "RESET") return;
-  try {
-    await fetch("/api/reset", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirm: "RESET" }),
-    });
-    served = {}; render();
-  } catch (e) { setSync("error"); }
-  load();
+el("list").addEventListener("click",e=>{const r=e.target.closest(".row");if(r)toggle(r.dataset.id);});
+el("list").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")){const r=e.target.closest(".row");if(r){e.preventDefault();toggle(r.dataset.id);}}});
+el("days").addEventListener("click",e=>{const b=e.target.closest(".day");if(!b)return;
+  const day=+b.dataset.day; const s=sessions.find(x=>x.day===day&&x.meal==="lunch")||sessions.find(x=>x.day===day);
+  if(s){session=s.key;lastSig="";buildSelector();render();}});
+el("mealRow").addEventListener("click",e=>{const b=e.target.closest(".mealbtn");if(!b||b.disabled)return;
+  if(b.dataset.key){session=b.dataset.key;lastSig="";buildSelector();render();}});
+el("search").addEventListener("input",e=>{query=e.target.value;lastSig="";render();});
+document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+  filter=c.dataset.filter;document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===c));
+  lastSig="";render();}));
+el("resetBtn").addEventListener("click",async()=>{
+  const cur=sessions.find(s=>s.key===session);
+  if(prompt(`Clear all check-offs for ${cur?cur.label:"this session"}? Type RESET to confirm.`)!=="RESET")return;
+  try{await fetch("/api/reset",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({confirm:"RESET",session})});}catch(e){setSync("error");}
+  for(const p of people) delete served[field(session,p.id)]; lastSig=""; render(); load();
 });
 
-// Poll for shared updates
 load();
-setInterval(load, 3000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+setInterval(load,3000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)load();});
 </script>
 </body>
 </html>

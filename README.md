@@ -1,50 +1,61 @@
-# Meal Check-off
+# Paryushan Meal Check-off
 
-A shared, live checklist for volunteers to mark each person's **lunch** and **dinner** as collected.
-Everyone sees the same state, updated every few seconds. Works great on phones.
+A shared, live checklist for volunteers to serve meals across the 8 days of Paryushan, plus an
+admin page to clean up and publish the signup roster.
 
-- Search by name or email
-- Filter to "Lunch pending" / "Dinner pending"
-- Each person shows how many meals they get (the number on the button)
-- Live progress bars for meals served
-- "Reset all check-offs" to reuse for the next event
+## Volunteer app (`/`)
 
-## 1. Add your data
+- Pick the session: Day tabs (1–8) + Lunch/Dinner (Day 8 is lunch only)
+- See everyone signed up for that session with their plate count
+- Tap a row to mark collected; live progress for people + plates
+- Search by name, mobile, or email; "Not collected" filter
+- All volunteers share the same state, refreshed every few seconds
+- Per-session reset
 
-Replace `data/roster.csv` with your file. Keep a header row. These column names are recognized
-(any order, case-insensitive): **name**, **email**, **lunch**, **dinner**.
+## Roster admin (`/admin.html`)
 
-```
-name,email,lunch,dinner
-Aarav Shah,aarav.shah@example.com,2,2
-```
+Upload a signup CSV, clean up duplicate signups, then download the cleaned file or publish it live.
 
-`lunch` / `dinner` are the number of meals that person gets. Use `0` if they have none of that meal.
+- Auto-detects `Day N - Lunch/Dinner` columns plus name, email, mobile, signup time
+- Ignores the `TOTAL` footer row
+- Merges duplicate signups by one of two rules you choose:
+  - **Most recent signup wins** (default) — treats the latest submission as final
+  - **Most meals wins** — keeps the largest signup
+- Shows a preview: how many merged, plates before/after, and example merges
+- **Download cleaned CSV** — nothing is published; use this to hand-fix outliers and re-upload
+- **Publish to live** — replaces the roster for all volunteers instantly (needs the passcode below)
 
-## 2. Put it on GitHub
+> Note: neither merge rule is perfect when someone re-submitted with a *different* meal count.
+> The preview lists the merges so you can spot outliers; if one looks wrong, download the cleaned
+> CSV, fix that row, and re-upload.
 
-Create a new repository at github.com and upload all these files (GitHub's web "Add file → Upload files"
-works from a phone).
+## Deploy to Vercel
 
-## 3. Deploy to Vercel
+1. Put these files in a new GitHub repo (github.com → New repository → Add file → Upload files).
+2. vercel.com → Add New… → Project → import the repo → Deploy.
+3. Storage → Create Database → **Upstash for Redis** → Connect to this project.
+4. To allow publishing from the admin page: Project → Settings → Environment Variables →
+   add **ADMIN_PASSWORD** = a passcode of your choice.
+5. Deployments → ⋯ → Redeploy.
 
-1. Go to vercel.com → **Add New… → Project** → import your repo → **Deploy**.
-2. In the project, open **Storage → Create Database → Upstash for Redis** → create it → **Connect** to this project.
-   (This automatically adds the database credentials as environment variables.)
-3. Open **Deployments → … → Redeploy** so it picks up the database.
+Share the base URL with volunteers. Keep `/admin.html` + the passcode to yourself.
 
-Open the site — the top banner disappears once storage is connected. Share the URL with your volunteers.
+## How the data flows
 
-## Reset between events
+- The volunteer app reads the **published** roster from Redis if one exists, otherwise the
+  `data/roster.csv` bundled in the repo. So you can either commit a CSV and redeploy, or just
+  publish from the admin page — no redeploy needed.
+- Check-offs are keyed to each person's email + signup time. Re-publishing a cleaned roster
+  keeps check-offs aligned for people whose entry is unchanged.
 
-Tap **Reset all check-offs** at the bottom and type `RESET`. This clears everyone's collected state.
-(Editing the roster later: update `data/roster.csv`, push to GitHub, Vercel redeploys automatically.)
+## Files
 
-## How it works
-
-- `index.html` — the app (plain HTML/JS, no build step)
-- `api/state.js` — returns the roster + shared collected state
-- `api/toggle.js` — marks a lunch/dinner collected or not
-- `api/reset.js` — clears all collected state
-- `lib/roster.js` — parses `data/roster.csv`
-- `lib/redis.js` — connects to Upstash Redis
+- `index.html` — volunteer app
+- `admin.html` — upload / clean / publish roster
+- `api/state.js` — sessions + people + shared collected state
+- `api/toggle.js` — mark a person collected for a session
+- `api/reset.js` — clear a session (or everything)
+- `api/import.js` — clean a CSV (dry-run) and publish it (guarded by ADMIN_PASSWORD)
+- `lib/roster.js` — CSV parsing, dedupe, CSV rebuild
+- `lib/data.js` — resolves the live roster (Redis, else bundled CSV)
+- `lib/redis.js` — Upstash Redis connection

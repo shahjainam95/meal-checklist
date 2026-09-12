@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Roster Admin · Paryushan Meals</title>
+<style>
+  :root{--bg:#f6f5f1;--surface:#fff;--ink:#16302b;--muted:#6b7770;--line:#e2e4de;
+    --pending:#d3d7cf;--done:#157f5b;--done-bg:#e6f3ec;--accent:#b9702f;--accent-bg:#f4e7d8;
+    --danger:#a2402f;--radius:14px}
+  *{box-sizing:border-box}html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:640px;margin:0 auto;padding:0 16px 48px}
+  header{background:var(--ink);color:#fff;margin:0 -16px 16px;padding:16px;
+    padding-top:max(16px,env(safe-area-inset-top))}
+  h1{font-size:17px;margin:0;font-weight:650}
+  header p{margin:6px 0 0;font-size:13px;color:#cdd8d3}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+  label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+  input[type=file],select,input[type=password]{width:100%;font-size:16px;color:var(--ink);
+    border:1px solid var(--line);border-radius:10px;background:#fff;padding:11px 12px}
+  select:focus,input:focus{outline:3px solid var(--accent-bg);border-color:var(--accent)}
+  .field{margin-bottom:14px}
+  button{font:inherit;font-weight:650;border:none;border-radius:11px;padding:13px 16px;cursor:pointer;min-height:48px}
+  .primary{background:var(--ink);color:#fff;width:100%}
+  .go{background:var(--done);color:#fff;width:100%}
+  .ghost{background:#fff;color:var(--ink);border:1px solid var(--pending);width:100%}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+  .stat:last-child{border-bottom:none}
+  .stat b{font-weight:700}
+  .merge{font-size:13px;color:var(--muted);padding:8px 0;border-bottom:1px dashed var(--line)}
+  .merge b{color:var(--ink)}
+  .msg{padding:12px 14px;border-radius:11px;font-size:14px;margin-top:12px}
+  .err{background:#faeceA;background:#f7e9e6;color:#7a2c1f;border:1px solid #e6c2b8}
+  .ok{background:var(--done-bg);color:#155e44;border:1px solid #bfe4cf}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:8px}
+  a.back{color:var(--muted);font-size:13px}
+  h2{font-size:15px;margin:2px 0 12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Roster Admin</h1>
+    <p>Upload a signup CSV, clean up duplicate signups, then download it or publish it live.</p>
+  </header>
+
+  <div class="card">
+    <div class="field">
+      <label for="file">Signup CSV export</label>
+      <input id="file" type="file" accept=".csv,text/csv" />
+    </div>
+    <div class="field">
+      <label for="rule">When someone signed up more than once, keep</label>
+      <select id="rule">
+        <option value="recent">Their most recent signup</option>
+        <option value="meals">Their signup with the most meals</option>
+      </select>
+    </div>
+    <button id="previewBtn" class="primary" disabled>Preview cleanup</button>
+    <div id="msg"></div>
+  </div>
+
+  <div id="result" class="card" style="display:none">
+    <h2>Cleanup preview</h2>
+    <div id="stats"></div>
+    <div id="examples" style="margin-top:10px"></div>
+    <div class="row2" style="margin-top:14px">
+      <button id="dlBtn" class="ghost">Download cleaned CSV</button>
+      <button id="pubToggle" class="go">Publish to live</button>
+    </div>
+    <div id="publish" style="display:none;margin-top:14px">
+      <div class="field">
+        <label for="pass">Admin passcode</label>
+        <input id="pass" type="password" autocomplete="off" placeholder="ADMIN_PASSWORD you set in Vercel" />
+      </div>
+      <button id="pubBtn" class="go">Publish now</button>
+      <p class="hint">Publishing replaces the live roster instantly for all volunteers. Set an
+        <b>ADMIN_PASSWORD</b> env var in Vercel first (Project → Settings → Environment Variables).</p>
+      <div id="pubMsg"></div>
+    </div>
+  </div>
+
+  <a class="back" href="./">\u2190 Back to check-off</a>
+</div>
+
+<script>
+const el=(id)=>document.getElementById(id);
+let csvText="", cleanedCsv="", currentRule="recent";
+
+el("file").addEventListener("change", async (e)=>{
+  const f=e.target.files[0];
+  el("previewBtn").disabled=!f;
+  el("msg").innerHTML="";
+  if(f) csvText=await f.text();
+});
+
+el("previewBtn").addEventListener("click", async ()=>{
+  currentRule=el("rule").value;
+  setMsg("msg","Reading and cleaning\u2026","");
+  try{
+    const r=await fetch("/api/import",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({csv:csvText,rule:currentRule,commit:false})});
+    const d=await r.json();
+    if(!r.ok){ setMsg("msg", d.error||"Something went wrong.", "err"); return; }
+    el("msg").innerHTML="";
+    cleanedCsv=d.cleanedCsv||"";
+    showSummary(d.summary);
+  }catch(e){ setMsg("msg","Network error. Try again.","err"); }
+});
+
+function showSummary(s){
+  el("result").style.display="block";
+  el("publish").style.display="none";
+  el("stats").innerHTML=[
+    ["Signups in file", s.rawRows],
+    ["People after cleanup", "<b>"+s.people+"</b>"],
+    ["Duplicate signups merged", s.merged],
+    ["Meal sessions detected", s.sessions],
+    ["Total plates (before \u2192 after)", s.platesRaw+" \u2192 "+s.platesClean],
+    ["Rule used", s.rule==="meals"?"Most meals wins":"Most recent wins"],
+  ].map(([k,v])=>`<div class="stat"><span>${k}</span><span>${v}</span></div>`).join("");
+  const ex=(s.examples||[]);
+  el("examples").innerHTML = ex.length
+    ? "<label>A few merges</label>"+ex.map(m=>{
+        const dropped=m.dropped.map(d=>`${d.meals} on ${short(d.at)}`).join(", ");
+        return `<div class="merge"><b>${escapeHtml(m.name)}</b> \u2014 kept ${m.kept.meals} meals (${short(m.kept.at)}); dropped ${dropped}</div>`;
+      }).join("")
+    : "";
+}
+
+el("dlBtn").addEventListener("click", ()=>{
+  const blob=new Blob([cleanedCsv],{type:"text/csv"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download="roster-cleaned.csv"; a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+el("pubToggle").addEventListener("click", ()=>{ el("publish").style.display="block"; el("pass").focus(); });
+
+el("pubBtn").addEventListener("click", async ()=>{
+  const password=el("pass").value;
+  setMsg("pubMsg","Publishing\u2026","");
+  try{
+    const r=await fetch("/api/import",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({csv:csvText,rule:currentRule,commit:true,password})});
+    const d=await r.json();
+    if(!r.ok){ setMsg("pubMsg", d.error||"Publish failed.", "err"); return; }
+    setMsg("pubMsg","Published. Volunteers will see the new roster within a few seconds.","ok");
+  }catch(e){ setMsg("pubMsg","Network error. Try again.","err"); }
+});
+
+function setMsg(id,text,kind){ el(id).innerHTML = text?`<div class="msg ${kind}">${escapeHtml(text)}</div>`:""; }
+function short(s){ if(!s) return "?"; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s); if(!m) return s;
+  return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[2]-1]+" "+(+m[3]); }
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+</script>
+</body>
+</html>
